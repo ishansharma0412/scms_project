@@ -268,7 +268,7 @@ const AdminDashboard = () => {
 
   const fetchComplaints = async () => {
     try {
-      const res = await axios.get('http://127.0.0.1:8000/complaints');
+      const res = await axios.get('https://scms-project-sgg8.onrender.com/complaints');
       const data = res.data;
       setComplaints(data);
       calculateStats(data);
@@ -295,7 +295,7 @@ const AdminDashboard = () => {
     const current = complaints.find(c => c.id === id);
     const updateData = updates[id] || {};
     try {
-      await axios.put(`http://127.0.0.1:8000/complaints/${id}`, {
+      await axios.put(`https://scms-project-sgg8.onrender.com/complaints/${id}`, {
         status: updateData.status || current.status,
         estimated_days: parseInt(updateData.estimated_days || current.estimated_days)
       });

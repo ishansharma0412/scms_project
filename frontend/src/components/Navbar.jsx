@@ -96,7 +96,7 @@ const Navbar = () => {
             <LayoutDashboard className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-wide">SCMS <span className="text-teal-400">Portal</span></h1>
+            <h1 className="text-xl font-bold tracking-wide">Fix<span className="text-teal-400">Flow</span></h1>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider">Complaint Management System</p>
           </div>
         </div>

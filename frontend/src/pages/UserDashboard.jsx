@@ -200,7 +200,7 @@ const UserDashboard = () => {
 
   const fetchComplaints = async () => {
     try {
-      const res = await axios.get('http://127.0.0.1:8000/complaints');
+      const res = await axios.get('https://scms-project-sgg8.onrender.com/complaints');
       setComplaints(res.data);
     } catch (e) { console.error("Backend offline"); }
   };
@@ -216,7 +216,7 @@ const UserDashboard = () => {
     if (formData.image) data.append('image', formData.image);
 
     try {
-      const res = await axios.post('http://127.0.0.1:8000/complaints', data, {
+      const res = await axios.post('https://scms-project-sgg8.onrender.com/complaints', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setTimeout(() => {
@@ -230,7 +230,7 @@ const UserDashboard = () => {
 
   const handleVerify = async (id) => {
     try {
-      await axios.put(`http://127.0.0.1:8000/complaints/${id}/verify`);
+      await axios.put(`https://scms-project-sgg8.onrender.com/complaints/${id}/verify`);
       const updatedList = complaints.map(c => c.id === id ? { ...c, status: "Closed" } : c);
       setComplaints(updatedList);
     } catch (e) { alert("Connection Error"); }
@@ -238,7 +238,7 @@ const UserDashboard = () => {
 
   const handleReopen = async (id) => {
     try {
-        await axios.put(`http://127.0.0.1:8000/complaints/${id}/reopen`);
+        await axios.put(`https://scms-project-sgg8.onrender.com/complaints/${id}/reopen`);
         const updatedList = complaints.map(c => c.id === id ? { ...c, status: "Reopened", priority: "High" } : c);
         setComplaints(updatedList);
         alert("Complaint Reopened!");
