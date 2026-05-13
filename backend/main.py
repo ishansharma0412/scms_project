@@ -154,9 +154,7 @@ from pydantic import BaseModel
 from datetime import date
 import ai_engine 
 
-# --- THIS IS THE LINE YOU WERE MISSING ---
 app = FastAPI() 
-# -----------------------------------------
 
 # 1. MOUNT STATIC FOLDER (For Images)
 if not os.path.exists("uploads"):
@@ -185,7 +183,39 @@ def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
+# --- NEW: LOGIN SECURITY MODELS ---
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 # --- API ENDPOINTS ---
+
+# 🛑 THIS IS THE NEW LOGIN ENDPOINT 🛑
+@app.post("/login")
+def login_user(req: LoginRequest):
+    # Hardcoded Credentials for your Demo Presentation
+    
+    # 1. Admin Login
+    if req.email == "admin@abes.edu" and req.password == "admin123":
+        return {
+            "success": True, 
+            "role": "admin", 
+            "token": "fake-jwt-token-admin",
+            "message": "Welcome Admin"
+        }
+    
+    # 2. Student Login
+    elif req.email == "student@abes.edu" and req.password == "student123":
+        return {
+            "success": True, 
+            "role": "student", 
+            "token": "fake-jwt-token-student",
+            "message": "Welcome Student"
+}
+    
+    # 3. Fail
+    else:
+        raise HTTPException(status_code=401, detail="Invalid Email or Password")
 
 @app.get("/complaints")
 def get_complaints():
@@ -275,4 +305,13 @@ class ChatRequest(BaseModel):
 def chat_endpoint(req: ChatRequest):
     response_text = ai_engine.chat_with_ai(req.message, req.history, req.context)
     return {"response": response_text}
+from fastapi.middleware.cors import CORSMiddleware
 
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
