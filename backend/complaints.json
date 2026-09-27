@@ -1,5 +1,23 @@
 [
     {
+        "id": 11,
+        "title": "no water in taps",
+        "description": "there is no water is in taps for drinking",
+        "roll_no": "2300320100107",
+        "student_name": "ishan sharma",
+        "image": "/uploads/39f7a22a-2794-4de7-b38e-2f325ba3866a.png",
+        "category": "Plumbing",
+        "sentiment": "Neutral",
+        "priority": "High",
+        "ai_solution": "Check paper tray alignment. If jammed, do not pull forcefully. Use the secondary printer in the Lab while we fix this.",
+        "status": "Resolved",
+        "admin_viewed": true,
+        "estimated_days": 2,
+        "date": "2026-09-27",
+        "rating": 5,
+        "feedback": ""
+    },
+    {
         "id": 10,
         "title": "broken chiar",
         "description": "chair is broken",
@@ -36,7 +54,7 @@
         "sentiment": "Neutral",
         "priority": "Medium",
         "ai_solution": "Ensure all windows are closed. Set thermostat to 24\u00b0C. If leaking water, switch it off immediately.",
-        "status": "Resolved",
+        "status": "Closed",
         "admin_viewed": true,
         "estimated_days": 0,
         "date": "2025-11-20"

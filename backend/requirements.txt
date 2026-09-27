@@ -6,3 +6,8 @@ fpdf
 nltk
 textblob
 requests
+scikit-learn
+pandas
+joblib
+google-generativeai
+python-dotenv
