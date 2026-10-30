@@ -2,6 +2,9 @@ import json
 import os
 import shutil
 import uuid
+import hashlib
+import hmac
+import secrets
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -41,9 +44,43 @@ def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
+USERS_FILE = "users.json"
+
+def load_users():
+    if not os.path.exists(USERS_FILE):
+        return []
+    try:
+        with open(USERS_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return []
+
+def save_users(data):
+    with open(USERS_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+# Passwords are stored as "pbkdf2$<salt>$<hash>"
+def hash_password(password):
+    salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 100_000).hex()
+    return f"pbkdf2${salt}${digest}"
+
+def check_password(password, stored):
+    if not stored.startswith("pbkdf2$"):
+        # Old plain-text entry
+        return hmac.compare_digest(password, stored)
+    _, salt, digest = stored.split("$")
+    test = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 100_000).hex()
+    return hmac.compare_digest(test, digest)
+
 # --- MODELS ---
 class LoginRequest(BaseModel):
     email: str
+    password: str
+
+class SignupRequest(BaseModel):
+    roll_no: str
+    name: str
     password: str
 
 class UpdateSchema(BaseModel):
@@ -69,13 +106,54 @@ def login_user(req: LoginRequest):
         }
     elif req.email == "student@abes.edu" and req.password == "student@123":
         return {
-            "success": True, 
-            "role": "student", 
+            "success": True,
+            "role": "student",
             "token": "fake-jwt-token-student",
+            "name": "Demo Student",
+            "roll_no": "student@abes.edu",
             "message": "Welcome Student"
         }
-    else:
-        raise HTTPException(status_code=401, detail="Invalid Email or Password")
+
+    # Registered students (roll no + password)
+    roll_no = req.email.strip().upper()
+    users = load_users()
+    for u in users:
+        if u["roll_no"].upper() == roll_no and check_password(req.password, u["password"]):
+            if not u["password"].startswith("pbkdf2$"):
+                u["password"] = hash_password(req.password)
+                save_users(users)
+            return {
+                "success": True,
+                "role": u.get("role", "student"),
+                "token": "fake-jwt-token-student",
+                "name": u["name"],
+                "roll_no": u["roll_no"],
+                "message": f"Welcome {u['name']}"
+            }
+
+    raise HTTPException(status_code=401, detail="Invalid Roll No / Email or Password")
+
+@app.post("/signup/student")
+def signup_student(req: SignupRequest):
+    roll_no = req.roll_no.strip().upper()
+    name = req.name.strip()
+    if not roll_no or not name:
+        raise HTTPException(status_code=400, detail="Name and Roll No are required")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    users = load_users()
+    if any(u["roll_no"].upper() == roll_no for u in users):
+        raise HTTPException(status_code=400, detail="This Roll No is already registered. Please login.")
+
+    users.append({
+        "roll_no": roll_no,
+        "name": name,
+        "password": hash_password(req.password),
+        "role": "student"
+    })
+    save_users(users)
+    return {"success": True, "message": "Registration successful"}
 
 @app.get("/complaints")
 def get_complaints():

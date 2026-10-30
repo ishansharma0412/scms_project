@@ -51,7 +51,10 @@ const Login = () => {
         }
       }
     } catch (err) {
-      setError(err.response?.data?.detail || "An error occurred. Try again.");
+      const detail = err.response?.data?.detail;
+      if (typeof detail === 'string') setError(detail);
+      else if (!err.response) setError("Server is waking up or unreachable. Please wait a few seconds and try again.");
+      else setError("Please fill in all fields correctly.");
     } finally {
       setLoading(false);
     }
@@ -112,7 +115,7 @@ const Login = () => {
             {mode === 'student_login' && (
                 <>
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Roll No</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Roll No / Email</label>
                         <div className="relative">
                             <User className="absolute left-3 top-3 text-gray-400" size={18} />
                             <input type="text" required className="w-full pl-10 p-2 border rounded focus:ring-2 focus:ring-teal-500 outline-none"
@@ -138,7 +141,7 @@ const Login = () => {
                         <div className="relative">
                             <Key className="absolute left-3 top-3 text-gray-400" size={18} />
                             <input type="text" required className="w-full pl-10 p-2 border rounded focus:ring-2 focus:ring-teal-500 outline-none"
-                                placeholder="admin" value={formData.admin_id} onChange={(e) => setFormData({...formData, admin_id: e.target.value})} />
+                                placeholder="admin@abes.edu" value={formData.admin_id} onChange={(e) => setFormData({...formData, admin_id: e.target.value})} />
                         </div>
                     </div>
                     <div>
@@ -168,7 +171,7 @@ const Login = () => {
         )}
 
         <div className="mt-6 text-center text-xs text-gray-400 border-t pt-4">
-          <p>Admin Demo: admin / admin123</p>
+          <p>Admin Demo: admin@abes.edu / admin@123</p>
         </div>
       </div>
     </div>
