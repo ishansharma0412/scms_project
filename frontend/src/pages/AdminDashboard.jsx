@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { Save, AlertTriangle, CheckCircle, Clock, Search, AlertOctagon, Filter, LogOut, User, FileText, Star, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -16,7 +17,7 @@ const AdminDashboard = () => {
 
   const fetchComplaints = async () => {
     try {
-      const res = await axios.get('http://127.0.0.1:8000/complaints');
+      const res = await axios.get(`${API_URL}/complaints`);
       const data = res.data;
       setComplaints(data);
       calculateStats(data);
@@ -48,7 +49,7 @@ const AdminDashboard = () => {
     const current = complaints.find(c => c.id === id);
     const updateData = updates[id] || {};
     try {
-      await axios.put(`http://127.0.0.1:8000/complaints/${id}`, {
+      await axios.put(`${API_URL}/complaints/${id}`, {
         status: updateData.status || current.status,
         estimated_days: parseInt(updateData.estimated_days || current.estimated_days)
       });
@@ -85,7 +86,7 @@ const AdminDashboard = () => {
             <p className="text-gray-300 mt-1">Manage campus grievances and track resolution metrics.</p>
         </div>
         <div className="flex gap-4">
-            <button onClick={() => window.open('http://127.0.0.1:8000/report/download', '_blank')} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-500 px-4 py-2 rounded text-sm font-bold transition shadow-lg">
+            <button onClick={() => window.open(`${API_URL}/report/download`, '_blank')} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-500 px-4 py-2 rounded text-sm font-bold transition shadow-lg">
                 <FileText size={16} /> Export PDF Report
             </button>
         </div>
@@ -144,8 +145,8 @@ const AdminDashboard = () => {
                                 
                                 <td className="p-4 align-top">
                                     {c.image ? (
-                                        <a href={`http://127.0.0.1:8000${c.image}`} target="_blank" rel="noreferrer" className="block w-14 h-14 rounded overflow-hidden border shadow-sm hover:opacity-80">
-                                            <img src={`http://127.0.0.1:8000${c.image}`} className="w-full h-full object-cover" />
+                                        <a href={`${API_URL}${c.image}`} target="_blank" rel="noreferrer" className="block w-14 h-14 rounded overflow-hidden border shadow-sm hover:opacity-80">
+                                            <img src={`${API_URL}${c.image}`} className="w-full h-full object-cover" />
                                         </a>
                                     ) : <div className="w-14 h-14 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-[10px] border">No Img</div>}
                                 </td>

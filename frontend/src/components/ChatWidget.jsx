@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
 
 export default function ChatWidget() {
@@ -29,7 +30,7 @@ export default function ChatWidget() {
     setIsLoading(true);
 
     try {
-      const res = await axios.post('http://127.0.0.1:8000/chat', {
+      const res = await axios.post(`${API_URL}/chat`, {
         message: userMessage,
         history: [],
         context: "You are an AI assistant helping a college student with campus complaints. Give short, direct temporary solutions or advice."

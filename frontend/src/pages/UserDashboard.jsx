@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { Send, Image as ImageIcon, Bell, Info, Loader2, CheckCircle, Archive, ThumbsUp, ThumbsDown, AlertOctagon, History, List, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ChatWidget from '../components/ChatWidget';
@@ -19,7 +20,7 @@ const UserDashboard = () => {
 
   const fetchComplaints = async () => {
     try {
-      const res = await axios.get('http://127.0.0.1:8000/complaints');
+      const res = await axios.get(`${API_URL}/complaints`);
       // Filter only this user's complaints
       const userComplaints = res.data.filter(c => c.roll_no === user.roll_no);
       setComplaints(userComplaints);
@@ -39,7 +40,7 @@ const UserDashboard = () => {
     if (formData.image) data.append('image', formData.image);
 
     try {
-      const res = await axios.post('http://127.0.0.1:8000/complaints', data, {
+      const res = await axios.post(`${API_URL}/complaints`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setTimeout(() => {
@@ -55,9 +56,9 @@ const UserDashboard = () => {
   const handleVerify = async (id, rating, feedback) => {
     try {
       if (rating > 0) {
-          await axios.put(`http://127.0.0.1:8000/complaints/${id}/rate`, { rating, feedback });
+          await axios.put(`${API_URL}/complaints/${id}/rate`, { rating, feedback });
       }
-      await axios.put(`http://127.0.0.1:8000/complaints/${id}/verify`);
+      await axios.put(`${API_URL}/complaints/${id}/verify`);
       const updatedList = complaints.map(c => c.id === id ? { ...c, status: "Closed", rating: rating } : c);
       setComplaints(updatedList);
       setRatingModal(null);
@@ -66,7 +67,7 @@ const UserDashboard = () => {
 
   const handleReopen = async (id) => {
     try {
-        await axios.put(`http://127.0.0.1:8000/complaints/${id}/reopen`);
+        await axios.put(`${API_URL}/complaints/${id}/reopen`);
         const updatedList = complaints.map(c => c.id === id ? { ...c, status: "Reopened", priority: "High" } : c);
         setComplaints(updatedList);
         alert("Complaint Reopened!");
@@ -76,7 +77,7 @@ const UserDashboard = () => {
   const handleWithdraw = async (id) => {
     if(!window.confirm("Are you sure you want to withdraw and delete this complaint?")) return;
     try {
-        await axios.delete(`http://127.0.0.1:8000/complaints/${id}`);
+        await axios.delete(`${API_URL}/complaints/${id}`);
         setComplaints(complaints.filter(c => c.id !== id));
         alert("Complaint Withdrawn Successfully");
     } catch (e) { alert("Connection Error"); }
@@ -206,7 +207,7 @@ const UserDashboard = () => {
                     <div className="flex gap-4 mt-3">
                         {c.image && (
                             <div className="w-24 h-24 flex-shrink-0 border rounded bg-gray-100 overflow-hidden">
-                                <img src={`http://127.0.0.1:8000${c.image}`} alt="Evidence" className="w-full h-full object-cover" />
+                                <img src={`${API_URL}${c.image}`} alt="Evidence" className="w-full h-full object-cover" />
                             </div>
                         )}
                         

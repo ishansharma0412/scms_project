@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { Lock, User, ShieldCheck, AlertCircle, UserPlus, Key } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,7 +21,7 @@ const Login = () => {
 
     try {
       if (mode === 'student_signup') {
-        const res = await axios.post('http://127.0.0.1:8000/signup/student', {
+        const res = await axios.post(`${API_URL}/signup/student`, {
             roll_no: formData.roll_no,
             name: formData.name,
             password: formData.password
@@ -32,7 +33,7 @@ const Login = () => {
         }
       } 
       else if (mode === 'student_login') {
-        const res = await axios.post('http://127.0.0.1:8000/login', { 
+        const res = await axios.post(`${API_URL}/login`, { 
           email: formData.roll_no, 
           password: formData.password 
         });
@@ -41,7 +42,7 @@ const Login = () => {
         }
       } 
       else if (mode === 'admin_login') {
-        const res = await axios.post('http://127.0.0.1:8000/login', { 
+        const res = await axios.post(`${API_URL}/login`, { 
             email: formData.admin_id, 
             password: formData.admin_password 
         });
