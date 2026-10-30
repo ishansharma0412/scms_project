@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { API_URL } from '../config';
+import { API_URL, imageUrl } from '../config';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { Save, AlertTriangle, CheckCircle, Clock, Search, AlertOctagon, Filter, LogOut, User, FileText, Star, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -145,8 +145,8 @@ const AdminDashboard = () => {
                                 
                                 <td className="p-4 align-top">
                                     {c.image ? (
-                                        <a href={`${API_URL}${c.image}`} target="_blank" rel="noreferrer" className="block w-14 h-14 rounded overflow-hidden border shadow-sm hover:opacity-80">
-                                            <img src={`${API_URL}${c.image}`} className="w-full h-full object-cover" />
+                                        <a href={imageUrl(c.image)} target="_blank" rel="noreferrer" className="block w-14 h-14 rounded overflow-hidden border shadow-sm hover:opacity-80">
+                                            <img src={imageUrl(c.image)} className="w-full h-full object-cover" />
                                         </a>
                                     ) : <div className="w-14 h-14 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-[10px] border">No Img</div>}
                                 </td>

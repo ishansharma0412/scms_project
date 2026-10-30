@@ -1,20 +1,18 @@
-import json
 import os
-import shutil
 import uuid
-import hashlib
-import hmac
-import secrets
+import requests
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
+from fpdf import FPDF
 from pydantic import BaseModel
 from datetime import date
-import ai_engine 
+import ai_engine
 
-app = FastAPI() 
+app = FastAPI()
 
-# 1. MOUNT STATIC FOLDER (For Images)
+# 1. MOUNT STATIC FOLDER (old images stored before Supabase Storage)
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
@@ -23,55 +21,35 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # 2. CORS SETTINGS (Fixed: No duplicates)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-DB_FILE = "complaints.json"
+# 3. SUPABASE (database + image storage)
+# The publishable key is safe to ship: users are only reachable through the
+# signup_student / login_student database functions, never directly.
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://csxfuythydeltmaxzver.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_publishable_yE1K7DLreKSVmddqOSURCw_GPa4DxGj")
+IMAGE_BUCKET = "complaint-images"
+HEADERS = {"apikey": SUPABASE_KEY, "Content-Type": "application/json"}
 
-def load_db():
-    if not os.path.exists(DB_FILE):
-        return []
-    try:
-        with open(DB_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return []
+def db(method, path, **kwargs):
+    res = requests.request(method, f"{SUPABASE_URL}/rest/v1/{path}", headers={**HEADERS, **kwargs.pop("headers", {})}, timeout=15, **kwargs)
+    if res.status_code >= 400:
+        print(f"Supabase error {res.status_code}: {res.text}")
+        raise HTTPException(status_code=500, detail="Database error. Please try again.")
+    return res.json() if res.text else None
 
-def save_db(data):
-    with open(DB_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+def rpc(name, params):
+    return db("POST", f"rpc/{name}", json=params)
 
-USERS_FILE = "users.json"
-
-def load_users():
-    if not os.path.exists(USERS_FILE):
-        return []
-    try:
-        with open(USERS_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return []
-
-def save_users(data):
-    with open(USERS_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-# Passwords are stored as "pbkdf2$<salt>$<hash>"
-def hash_password(password):
-    salt = secrets.token_hex(16)
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 100_000).hex()
-    return f"pbkdf2${salt}${digest}"
-
-def check_password(password, stored):
-    if not stored.startswith("pbkdf2$"):
-        # Old plain-text entry
-        return hmac.compare_digest(password, stored)
-    _, salt, digest = stored.split("$")
-    test = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 100_000).hex()
-    return hmac.compare_digest(test, digest)
+def update_complaint_row(id, fields):
+    rows = db("PATCH", f"complaints?id=eq.{id}", json=fields, headers={"Prefer": "return=representation"})
+    if not rows:
+        raise HTTPException(status_code=404, detail="Not found")
+    return rows[0]
 
 # --- MODELS ---
 class LoginRequest(BaseModel):
@@ -87,6 +65,10 @@ class UpdateSchema(BaseModel):
     status: str
     estimated_days: int
 
+class RateRequest(BaseModel):
+    rating: int
+    feedback: str = ""
+
 class ChatRequest(BaseModel):
     message: str
     history: list = []
@@ -99,8 +81,8 @@ def login_user(req: LoginRequest):
     # Hardcoded Credentials for Demo
     if req.email == "admin@abes.edu" and req.password == "admin@123":
         return {
-            "success": True, 
-            "role": "admin", 
+            "success": True,
+            "role": "admin",
             "token": "fake-jwt-token-admin",
             "message": "Welcome Admin"
         }
@@ -115,73 +97,55 @@ def login_user(req: LoginRequest):
         }
 
     # Registered students (roll no + password)
-    roll_no = req.email.strip().upper()
-    users = load_users()
-    for u in users:
-        if u["roll_no"].upper() == roll_no and check_password(req.password, u["password"]):
-            if not u["password"].startswith("pbkdf2$"):
-                u["password"] = hash_password(req.password)
-                save_users(users)
-            return {
-                "success": True,
-                "role": u.get("role", "student"),
-                "token": "fake-jwt-token-student",
-                "name": u["name"],
-                "roll_no": u["roll_no"],
-                "message": f"Welcome {u['name']}"
-            }
-
-    raise HTTPException(status_code=401, detail="Invalid Roll No / Email or Password")
+    result = rpc("login_student", {"p_roll_no": req.email, "p_password": req.password})
+    if not result.get("success"):
+        raise HTTPException(status_code=401, detail="Invalid Roll No / Email or Password")
+    return {
+        "success": True,
+        "role": result["role"],
+        "token": "fake-jwt-token-student",
+        "name": result["name"],
+        "roll_no": result["roll_no"],
+        "message": f"Welcome {result['name']}"
+    }
 
 @app.post("/signup/student")
 def signup_student(req: SignupRequest):
-    roll_no = req.roll_no.strip().upper()
-    name = req.name.strip()
-    if not roll_no or not name:
-        raise HTTPException(status_code=400, detail="Name and Roll No are required")
-    if len(req.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-
-    users = load_users()
-    if any(u["roll_no"].upper() == roll_no for u in users):
-        raise HTTPException(status_code=400, detail="This Roll No is already registered. Please login.")
-
-    users.append({
-        "roll_no": roll_no,
-        "name": name,
-        "password": hash_password(req.password),
-        "role": "student"
-    })
-    save_users(users)
+    result = rpc("signup_student", {"p_roll_no": req.roll_no, "p_name": req.name, "p_password": req.password})
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("detail", "Registration failed"))
     return {"success": True, "message": "Registration successful"}
 
 @app.get("/complaints")
 def get_complaints():
-    return load_db()
+    return db("GET", "complaints?select=*&order=id.desc")
 
 @app.post("/complaints")
 async def create_complaint(
-    title: str = Form(...), 
+    title: str = Form(...),
     description: str = Form(...),
     image: UploadFile = File(None)
 ):
-    current_db = load_db()
-    
-    # Image Handling (Fixed: Relative URL for Render)
+    # Image goes to Supabase Storage so it survives redeploys
     image_url = None
-    if image:
-        file_extension = image.filename.split(".")[-1]
+    if image and image.filename:
+        file_extension = image.filename.split(".")[-1].lower()
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
-        file_path = f"uploads/{unique_filename}"
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-        image_url = f"/uploads/{unique_filename}" # Removed 127.0.0.1
+        res = requests.post(
+            f"{SUPABASE_URL}/storage/v1/object/{IMAGE_BUCKET}/{unique_filename}",
+            headers={"apikey": SUPABASE_KEY, "Content-Type": image.content_type or "application/octet-stream"},
+            data=await image.read(),
+            timeout=30,
+        )
+        if res.status_code >= 400:
+            print(f"Image upload failed {res.status_code}: {res.text}")
+            raise HTTPException(status_code=500, detail="Image upload failed. Please try again.")
+        image_url = f"{SUPABASE_URL}/storage/v1/object/public/{IMAGE_BUCKET}/{unique_filename}"
 
     # AI Analysis (NLP)
     ai_result = ai_engine.analyze_text(description)
-    
-    new_complaint = {
-        "id": len(current_db) + 1,
+
+    rows = db("POST", "complaints", headers={"Prefer": "return=representation"}, json={
         "title": title,
         "description": description,
         "image": image_url,
@@ -193,45 +157,83 @@ async def create_complaint(
         "admin_viewed": False,
         "estimated_days": 0,
         "date": str(date.today())
-    }
-    
-    current_db.insert(0, new_complaint)
-    save_db(current_db)
-    return new_complaint
+    })
+    return rows[0]
 
 @app.put("/complaints/{id}")
 def update_complaint(id: int, update: dict):
-    db = load_db()
-    for c in db:
-        if c["id"] == id:
-            c["status"] = update.get("status", c["status"])
-            c["estimated_days"] = update.get("estimated_days", c["estimated_days"])
-            c["admin_viewed"] = True 
-            save_db(db)
-            return c
-    raise HTTPException(status_code=404, detail="Not found")
+    fields = {"admin_viewed": True}
+    if "status" in update:
+        fields["status"] = update["status"]
+    if "estimated_days" in update:
+        fields["estimated_days"] = int(update["estimated_days"] or 0)
+    return update_complaint_row(id, fields)
 
 @app.put("/complaints/{id}/verify")
 def verify_complaint(id: int):
-    db = load_db()
-    for c in db:
-        if c["id"] == id:
-            c["status"] = "Closed"
-            save_db(db)
-            return c
-    raise HTTPException(status_code=404, detail="Not found")
+    return update_complaint_row(id, {"status": "Closed"})
 
 @app.put("/complaints/{id}/reopen")
 def reopen_complaint(id: int):
-    db = load_db()
-    for c in db:
-        if c["id"] == id:
-            c["status"] = "Reopened"
-            c["priority"] = "High"
-            c["admin_viewed"] = False
-            save_db(db)
-            return c
-    raise HTTPException(status_code=404, detail="Not found")
+    return update_complaint_row(id, {"status": "Reopened", "priority": "High", "admin_viewed": False})
+
+@app.put("/complaints/{id}/rate")
+def rate_complaint(id: int, req: RateRequest):
+    if not 1 <= req.rating <= 5:
+        raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
+    return update_complaint_row(id, {"rating": req.rating, "feedback": req.feedback})
+
+@app.delete("/complaints/{id}")
+def delete_complaint(id: int):
+    rows = db("DELETE", f"complaints?id=eq.{id}", headers={"Prefer": "return=representation"})
+    if not rows:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"success": True}
+
+@app.get("/report/download")
+def download_report():
+    complaints = db("GET", "complaints?select=*&order=id.asc")
+
+    def clean(text, limit):
+        # Core PDF fonts only support Latin-1
+        text = str(text or "-").encode("latin-1", "replace").decode("latin-1")
+        return text if len(text) <= limit else text[:limit - 3] + "..."
+
+    pdf = FPDF(orientation="L")
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "FixFlow - Campus Complaint Report", ln=1)
+    pdf.set_font("Arial", "", 10)
+    total = len(complaints)
+    closed = sum(1 for c in complaints if c["status"] == "Closed")
+    pending = sum(1 for c in complaints if c["status"] in ("Pending", "Reopened"))
+    pdf.cell(0, 7, f"Generated on {date.today()}   |   Total: {total}   Closed: {closed}   Pending/Reopened: {pending}", ln=1)
+    pdf.ln(3)
+
+    columns = [("ID", 12), ("Date", 24), ("Title", 70), ("Category", 35), ("Priority", 22), ("Status", 28), ("Days", 14), ("Rating", 16), ("Feedback", 56)]
+    pdf.set_font("Arial", "B", 9)
+    pdf.set_fill_color(13, 148, 136)
+    pdf.set_text_color(255, 255, 255)
+    for name, width in columns:
+        pdf.cell(width, 8, name, border=1, fill=True)
+    pdf.ln()
+
+    pdf.set_font("Arial", "", 8)
+    pdf.set_text_color(0, 0, 0)
+    for c in complaints:
+        values = [c["id"], c["date"], c["title"], c["category"], c["priority"], c["status"], c["estimated_days"], f"{c['rating']}/5" if c["rating"] else "-", c["feedback"]]
+        for (name, width), value in zip(columns, values):
+            pdf.cell(width, 7, clean(value, int(width / 1.7)), border=1)
+        pdf.ln()
+
+    if not complaints:
+        pdf.cell(0, 8, "No complaints yet.", ln=1)
+
+    data = pdf.output(dest="S")
+    if isinstance(data, str):
+        data = data.encode("latin-1")
+    return Response(content=bytes(data), media_type="application/pdf",
+                    headers={"Content-Disposition": f"attachment; filename=fixflow-report-{date.today()}.pdf"})
 
 @app.post("/chat")
 def chat_endpoint(req: ChatRequest):

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { API_URL } from '../config';
+import { API_URL, imageUrl } from '../config';
 import { Send, Image as ImageIcon, Bell, Info, Loader2, CheckCircle, Archive, ThumbsUp, ThumbsDown, AlertOctagon, History, List, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ChatWidget from '../components/ChatWidget';
@@ -207,7 +207,7 @@ const UserDashboard = () => {
                     <div className="flex gap-4 mt-3">
                         {c.image && (
                             <div className="w-24 h-24 flex-shrink-0 border rounded bg-gray-100 overflow-hidden">
-                                <img src={`${API_URL}${c.image}`} alt="Evidence" className="w-full h-full object-cover" />
+                                <img src={imageUrl(c.image)} alt="Evidence" className="w-full h-full object-cover" />
                             </div>
                         )}
                         
