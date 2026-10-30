@@ -258,8 +258,13 @@ const UserDashboard = () => {
                 <div className="space-y-4">
                 {closedComplaints.map((c) => (
                     <div key={c.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm opacity-80 hover:opacity-100 transition">
-                        <div className="flex justify-between items-start">
-                            <div>
+                        <div className="flex justify-between items-start gap-4">
+                            {c.image && (
+                                <a href={imageUrl(c.image)} target="_blank" rel="noreferrer" className="w-16 h-16 flex-shrink-0 border rounded bg-gray-100 overflow-hidden">
+                                    <img src={imageUrl(c.image)} alt="Evidence" className="w-full h-full object-cover" />
+                                </a>
+                            )}
+                            <div className="flex-1">
                                 <h3 className="font-bold text-gray-600 text-lg line-through">{c.title}</h3>
                                 <p className="text-sm text-gray-500 mt-1">{c.description}</p>
                                 <div className="flex gap-2 mt-2">
