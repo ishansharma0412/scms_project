@@ -20,10 +20,9 @@ const UserDashboard = () => {
 
   const fetchComplaints = async () => {
     try {
-      const res = await axios.get(`${API_URL}/complaints`);
-      // Filter only this user's complaints
-      const userComplaints = res.data.filter(c => c.roll_no === user.roll_no);
-      setComplaints(userComplaints);
+      // Backend returns only this student's complaints
+      const res = await axios.get(`${API_URL}/complaints`, { params: { roll_no: user.roll_no } });
+      setComplaints(res.data);
     } catch (e) { console.error("Backend offline"); }
   };
 
@@ -43,13 +42,11 @@ const UserDashboard = () => {
       const res = await axios.post(`${API_URL}/complaints`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setTimeout(() => {
-        setComplaints([res.data, ...complaints]);
-        setFormData({ title: "", description: "", image: null });
-        setAiPopup(res.data);
-        setIsSubmitting(false);
-        setViewMode('active'); // Switch back to active to see the new complaint
-      }, 800);
+      setComplaints([res.data, ...complaints]);
+      setFormData({ title: "", description: "", image: null });
+      setAiPopup(res.data);
+      setIsSubmitting(false);
+      setViewMode('active'); // Switch back to active to see the new complaint
     } catch (error) { alert("Error uploading"); setIsSubmitting(false); }
   };
 

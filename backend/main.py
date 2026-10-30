@@ -117,13 +117,18 @@ def signup_student(req: SignupRequest):
     return {"success": True, "message": "Registration successful"}
 
 @app.get("/complaints")
-def get_complaints():
+def get_complaints(roll_no: str = None):
+    # Students pass their roll_no to see only their own complaints; admin gets all
+    if roll_no:
+        return db("GET", "complaints", params={"select": "*", "order": "id.desc", "roll_no": f"eq.{roll_no}"})
     return db("GET", "complaints?select=*&order=id.desc")
 
 @app.post("/complaints")
 async def create_complaint(
     title: str = Form(...),
     description: str = Form(...),
+    roll_no: str = Form(None),
+    student_name: str = Form(None),
     image: UploadFile = File(None)
 ):
     # Image goes to Supabase Storage so it survives redeploys
@@ -148,6 +153,8 @@ async def create_complaint(
     rows = db("POST", "complaints", headers={"Prefer": "return=representation"}, json={
         "title": title,
         "description": description,
+        "roll_no": roll_no,
+        "student_name": student_name,
         "image": image_url,
         "category": ai_result["category"],
         "sentiment": ai_result["sentiment"],

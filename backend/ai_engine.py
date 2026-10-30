@@ -79,7 +79,7 @@ def analyze_text(text: str):
             
             Return ONLY valid JSON.
             """
-            response = gemini_model.generate_content(prompt, request_options={"timeout": 25})
+            response = gemini_model.generate_content(prompt, request_options={"timeout": 10})
             response_text = response.text.strip()
             
             # Remove markdown formatting if Gemini adds it (e.g. ```json ... ```)
@@ -106,7 +106,7 @@ def chat_with_ai(message: str, history: list, context: str):
     if gemini_model:
         try:
             prompt = f"Context about complaints: {context}\nUser: {message}\nProvide a short, helpful response:"
-            response = gemini_model.generate_content(prompt, request_options={"timeout": 25})
+            response = gemini_model.generate_content(prompt, request_options={"timeout": 20})
             return response.text.strip()
         except Exception as e:
             print(f"Chat Exception: {e}")
