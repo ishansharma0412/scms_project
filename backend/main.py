@@ -60,14 +60,14 @@ class ChatRequest(BaseModel):
 @app.post("/login")
 def login_user(req: LoginRequest):
     # Hardcoded Credentials for Demo
-    if req.email == "admin@abes.edu" and req.password == "admin123":
+    if req.email == "admin@abes.edu" and req.password == "admin@123":
         return {
             "success": True, 
             "role": "admin", 
             "token": "fake-jwt-token-admin",
             "message": "Welcome Admin"
         }
-    elif req.email == "student@abes.edu" and req.password == "student123":
+    elif req.email == "student@abes.edu" and req.password == "student@123":
         return {
             "success": True, 
             "role": "student", 
