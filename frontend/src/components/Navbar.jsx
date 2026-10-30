@@ -104,13 +104,7 @@ const Navbar = () => {
         {/* Navigation Links */}
         <div className="flex items-center gap-6">
           
-          {/* Only show Panel links if NOT on Login Page */}
-          {!isLoginPage && (
-            <div className="hidden md:flex gap-6 text-sm font-medium text-gray-300">
-              <Link to="/user" className="hover:text-white transition">Student Panel</Link>
-              <Link to="/admin" className="hover:text-white transition">Admin Panel</Link>
-            </div>
-          )}
+          {/* Removed Panel Links for cleaner UI */}
           
           <div className="h-6 w-px bg-gray-700"></div>
 

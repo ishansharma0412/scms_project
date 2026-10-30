@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.env
+__pycache__/
+venv/
+env/
+*.pkl
+backend/uploads/
+*.pdf
+.DS_Store

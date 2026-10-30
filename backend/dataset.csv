@@ -1,0 +1,19 @@
+text,category,priority
+"Mera paani ka connection band hai 2 din se",Plumbing,High
+"Fan is not working in classroom 3",Electrical,Medium
+"Library book issue not resolved",Library,Low
+"Wi-Fi is very slow in hostel",Technical,Medium
+"Street light outside block A is broken",Electrical,Medium
+"Water cooler is giving warm water",Plumbing,Medium
+"Washroom is very dirty and smells bad",Housekeeping,High
+"No electricity in lab since morning",Electrical,High
+"AC in seminar hall is making noise",Maintenance,Low
+"Internet completely down in block B",Technical,High
+"Need new ID card",General,Low
+"Fee receipt not generated",General,High
+"Dogs roaming inside campus",Safety,Medium
+"Drinking water is empty in block C",Plumbing,High
+"Projector not working in room 102",Technical,High
+"Fees portal is showing error",Technical,High
+"Hostel food quality is very poor today",Canteen,High
+"Parking space is full, need more space",Infrastructure,Low
